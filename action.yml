@@ -1,0 +1,50 @@
+name: aikido-scanner
+description: scans with aikido.dev
+branding:
+  icon: lock
+  color: purple
+
+inputs:
+  arch:
+    description: |
+      defines the architecture of the runner
+      default is: linux_X86_64
+      accepts: linux_X86_64 | darwin_ARM64
+    default: linux_X86_64
+  api_key:
+    description: |
+      the API Key genererated in aikido
+    required: true
+  image_name:
+    description: |
+      name of your image in the local repository
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: linux_X86_64
+      shell: bash
+      if: ${{ inputs.arch == 'linux_X86_64' }}
+      run: echo "ARCH=linux_X86_64" >> $GITHUB_ENV
+
+    - name: darwin_ARM64
+      shell: bash
+      if: ${{ inputs.arch == 'darwin_ARM64' }}
+      run: echo "ARCH=darwin_ARM64" >> $GITHUB_ENV
+
+    - name: Download and Install
+      shell: bash
+      env:
+        ARCH: ${{ env.ARCH }}
+      run: |
+        wget -O ./aikido.zip "https://aikido-local-scanner.s3.eu-west-1.amazonaws.com/v1.0.19/${ARCH}/aikido-local-scanner.zip"
+        unzip aikido.zip -d "."
+        chmod +x aikido-local-scanner
+
+    - name: Scan
+      shell: bash
+      env:
+        API_KEY: ${{ inputs.api_key }}
+        IMAGE_NAME: ${{ inputs.image_name }}
+      run: |
+        ./aikido-local-scanner image-scan ${IMAGE_NAME} --apikey ${API_KEY}
